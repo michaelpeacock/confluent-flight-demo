@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Confluent Geospatial Flight Demo</title>
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.82/Build/Cesium/Cesium.js"></script>
+    <link href="https://cesium.com/downloads/cesiumjs/releases/1.82/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <script src="js/DrawHelper.js"></script>
+    <script src="/webjars/jquery/jquery.min.js"></script>
+    <script src="/webjars/sockjs-client/sockjs.min.js"></script>
+    <script src="/webjars/stomp-websocket/stomp.min.js"></script>
+    <script src="js/KafkaStomp.js"></script>
+    <script src="js/GeoHelper.js"></script>
+
+    <style>
+         @import url(css/DrawHelper.css);
+        #toolbar {
+            position: absolute;
+            top: 0px;
+            left: 0;
+            display: inline;
+            margin: 10px;
+            padding: 0px;
+            background: white;
+        }
+        #logging {
+            position: absolute;
+            bottom: 0px;
+            right: 0;
+            display: inline;
+            margin: 10px;
+            padding: 10px;
+            background: white;
+        }
+
+        body {
+            padding: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #dashboard {
+            background: rgba(42, 42, 42, 0.8);
+            padding: 4px;
+            border-radius: 4px;
+            position: absolute;
+            top: 5px; left: 70px;
+            font-size: 20px;
+            color: white;
+        }
+
+        #dashboard input {
+            vertical-align: middle;
+            padding-top: 2px;
+            padding-bottom: 2px;
+        }
+
+        #dashboard table tr {
+            transform: translateY(0);
+            transition: transform 0.4s ease-out;
+            font-size: 16px;
+        }
+
+        #dashboard table tr.up {
+            transform: translateY(33px);
+            transition: none;
+        }
+
+        #dashboard table tr.down {
+            transform: translateY(-33px);
+            transition: none;
+        }
+    </style>
+</head>
+<body onload="start()">
+<div id="cesiumContainer"></div>
+<div id="toolbar"></div>
+<script>
+        // create the almighty cesium widget
+        var viewer = new Cesium.Viewer('cesiumContainer', {
+            timeline : false,
+            animation : false
+        });
+        var scene = viewer.scene;
+
+    function start() {
+
+        // start the draw helper to enable shape creation and editing
+        var drawHelper = new DrawHelper(viewer);
+ 
+        var toolbar = drawHelper.addToolbar(document.getElementById("toolbar"), {
+            buttons: ['marker', 'polyline', 'polygon', 'circle', 'extent']
+        });
+        toolbar.addListener('markerCreated', function(event) {
+            loggingMessage('Marker created at ' + event.position.toString());
+            // create one common billboard collection for all billboards
+            var b = new Cesium.BillboardCollection();
+            scene.primitives.add(b);
+            var billboard = b.add({
+                show : true,
+                position : event.position,
+                pixelOffset : new Cesium.Cartesian2(0, 0),
+                eyeOffset : new Cesium.Cartesian3(0.0, 0.0, 0.0),
+                horizontalOrigin : Cesium.HorizontalOrigin.CENTER,
+                verticalOrigin : Cesium.VerticalOrigin.CENTER,
+                scale : 1.0,
+                image: './img/glyphicons_242_google_maps.png',
+                color : new Cesium.Color(1.0, 1.0, 1.0, 1.0)
+            });
+            billboard.setEditable();
+        });
+        toolbar.addListener('polylineCreated', function(event) {
+            loggingMessage('Polyline created with ' + event.positions.length + ' points');
+            var polyline = new DrawHelper.PolylinePrimitive({
+                positions: event.positions,
+                width: 5,
+                geodesic: true
+            });
+            scene.primitives.add(polyline);
+            polyline.setEditable();
+            polyline.addListener('onEdited', function(event) {
+                loggingMessage('Polyline edited, ' + event.positions.length + ' points');
+            });
+
+        });
+        toolbar.addListener('polygonCreated', function(event) {
+            loggingMessage('Polygon created with ' + event.positions.length + ' points');
+            var polygon = new DrawHelper.PolygonPrimitive({
+                positions: event.positions,
+                material : Cesium.Color(0.0, 0.0, 0.0, 0.2)
+            });
+            scene.primitives.add(polygon);
+            polygon.setEditable();
+            polygon.addListener('onEdited', function(event) {
+                loggingMessage('Polygon edited, ' + event.positions.length + ' points');
+            });
+            var geojson = createGeoJSON("Polygon", event.positions);
+            console.log("geojson: %O", geojson);
+            stompClient.send("/app/fence-data", {}, JSON.stringify(geojson));
+
+        });
+        toolbar.addListener('circleCreated', function(event) {
+            loggingMessage('Circle created: center is ' + event.center.toString() + ' and radius is ' + event.radius.toFixed(1) + ' meters');
+            var circle = new DrawHelper.CirclePrimitive({
+                center: event.center,
+                radius: event.radius,
+                material: Cesium.Material.fromType(Cesium.Material.RimLightingType)
+            });
+            scene.primitives.add(circle);
+            circle.setEditable();
+            circle.addListener('onEdited', function(event) {
+                loggingMessage('Circle edited: radius is ' + event.radius.toFixed(1) + ' meters');
+            });
+        });
+        toolbar.addListener('extentCreated', function(event) {
+            var extent = event.extent;
+            loggingMessage('Extent created (N: ' + extent.north.toFixed(3) + ', E: ' + extent.east.toFixed(3) + ', S: ' + extent.south.toFixed(3) + ', W: ' + extent.west.toFixed(3) + ')');
+            var extentPrimitive = new DrawHelper.ExtentPrimitive({
+                extent: extent,
+                material: Cesium.Color(0.0, 0.0, 0.0, 0.2)
+            });
+            scene.primitives.add(extentPrimitive);
+            extentPrimitive.setEditable();
+            extentPrimitive.addListener('onEdited', function(event) {
+                loggingMessage('Extent edited: extent is (N: ' + event.extent.north.toFixed(3) + ', E: ' + event.extent.east.toFixed(3) + ', S: ' + event.extent.south.toFixed(3) + ', W: ' + event.extent.west.toFixed(3) + ')');
+            });
+        });
+
+        var logging = document.getElementById('logging');
+        function loggingMessage(message) {
+            //logging.innerHTML = message;
+        }
+
+    }
+</script>
+<div id="dashboard">
+    <table >
+        <thead>
+        <tr>
+            <th>Dashboard Data</th>
+        </tr>
+        </thead>
+        <tbody id="dashboard-data">
+        </tbody>
+        <tr><td>&nbsp;</td></tr>
+        <tr>
+            <th>Layer Control</th>
+        </tr>
+       <tr><td><input type="checkbox" name="global_flights" checked onclick='handleGlobalClick(this);'/>&nbsp;Global Flights</td></tr>
+        <tr><td><input type="checkbox" name="filtered_flights" onclick='handleFilteredClick(this);'/>&nbsp;Filtered Flights</td></tr>
+    </table>
+</div>
+<script src="js/Flights.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+	"name": "opensky",
+	"config": {
+	  "name": "opensky",
+		"connector.class": "com.github.nbuesing.kafka.connect.opensky.OpenSkySourceConnector",
+		"tasks.max": "1",
+		"topic": "flights_raw",
+		"key.converter": "org.apache.kafka.connect.storage.StringConverter",
+		"value.converter": "io.confluent.connect.avro.AvroConverter",
+		"value.converter.schema.registry.url": "http://schema-registry:8081",
+		"interval": "10"
+	}
+}
