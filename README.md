@@ -37,9 +37,11 @@ This project has several dependencies including:
 
 ## Create a New Dashboard Item with ksqlDB
 Add the following in the C3 ksql editor. This will create a new entry in the dashboard with the count of flights from Ireland.
-`CREATE STREAM FLIGHTS_RAW WITH (KAFKA_TOPIC='flights_raw', PARTITIONS=1, REPLICAS=1, VALUE_FORMAT='AVRO');`
 
-`CREATE TABLE IRELAND_FLIGHTS WITH (KAFKA_TOPIC='dashboard-data', PARTITIONS=1, REPLICAS=1, VALUE_FORMAT='JSON') AS SELECT
+````
+CREATE STREAM FLIGHTS_RAW WITH (KAFKA_TOPIC='flights_raw', PARTITIONS=1, REPLICAS=1, VALUE_FORMAT='AVRO');
+
+CREATE TABLE IRELAND_FLIGHTS WITH (KAFKA_TOPIC='dashboard-data', PARTITIONS=1, REPLICAS=1, VALUE_FORMAT='JSON') AS SELECT
   'total-ireland-flights' as X,
   'Total Ireland Flight' `dashboardTitle`,
   COUNT(*) `dashboardValue`
@@ -47,6 +49,7 @@ FROM FLIGHTS_RAW
 WHERE (originCountry = 'Ireland')
 GROUP BY 'total-ireland-flights'
 EMIT CHANGES;`
+````
 
 And set auto.offset.reset to earliest to get a count from the beginning.
 
