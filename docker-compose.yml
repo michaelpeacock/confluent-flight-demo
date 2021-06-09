@@ -83,7 +83,6 @@ services:
       CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components,/var/connectors"
       CONNECT_LOG4J_LOGGERS: org.apache.zookeeper=ERROR,org.I0Itec.zkclient=ERROR,org.reflections=ERROR
     volumes:
-      - ./connect_output/:/var/connect_output/
       - ./connectors/:/var/connectors/
     
   ksqldb-server:
