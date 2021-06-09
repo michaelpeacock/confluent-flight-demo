@@ -158,3 +158,75 @@ services:
       CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
       CONFLUENT_METRICS_TOPIC_REPLICATION: 1
       PORT: 9021
+
+  rest-proxy:
+    image: confluentinc/cp-kafka-rest:6.0.0
+    depends_on:
+      - broker
+      - schema-registry
+    ports:
+      - 8082:8082
+    hostname: rest-proxy
+    container_name: rest-proxy
+    environment:
+      KAFKA_REST_HOST_NAME: rest-proxy
+      KAFKA_REST_BOOTSTRAP_SERVERS: 'broker:29092'
+      KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
+      KAFKA_REST_SCHEMA_REGISTRY_URL: 'http://schema-registry:8081'
+
+  flight-demo-ksqldb:
+    image: confluentinc/cp-ksqldb-cli:6.0.0
+    container_name: flight-demo-ksqldb
+    depends_on:
+      - ksqldb-server
+      - flight-demo
+    volumes:
+      - ./scripts:/tmp/scripts
+    entrypoint:
+      - bash
+      - -c
+      - |
+        echo "Creating streams via ksqlDB..."
+        cub ksql-server-ready ksqldb-server 8088 20
+        ksql http://ksqldb-server:8088 < /tmp/scripts/ksql/createFlightsStream.sql
+        ksql http://ksqldb-server:8088 < /tmp/scripts/ksql/createGeoFenceStream.sql
+        ksql http://ksqldb-server:8088 < /tmp/scripts/ksql/createFilteredFlightsStream.sql
+        sleep infinity
+
+  flight-demo:
+    image: michaelpeacock/confluent-flight-demo:latest
+    container_name: flight-demo
+    depends_on:
+      - broker
+      - schema-registry
+      - connect
+      - ksqldb-server
+    hostname: flight-demo
+    ports:
+      - 8080:8080
+    volumes:
+      - ./scripts:/tmp/scripts
+    environment:
+      kafka_bootstrapAddress: 'broker:29092'
+      schema_registry_url: 'http://schema-registry:8081'
+      dashboard_topic_name: dashboard-data
+    command:
+      - bash
+      - -c
+      - |
+        echo "Creating topics..."
+        cub kafka-ready -b broker:29092 1 20
+        kafka-topics --bootstrap-server broker:29092 --create --topic flights_raw
+        kafka-topics --bootstrap-server broker:29092 --create --topic flights
+        kafka-topics --bootstrap-server broker:29092 --create --topic dashboard-data
+        kafka-topics --bootstrap-server broker:29092 --create --topic flight-data
+        kafka-topics --bootstrap-server broker:29092 --create --topic filtered_flights
+
+        echo "Creating opensky connector..."
+        cub connect-ready connect 8083 20
+        cub sr-ready schema-registry 8081 20
+        sleep 10
+        curl connect:8083/connectors -X POST -kH "Content-Type: application/json" -d @/tmp/scripts/opensky-connect.json
+
+        echo "Starting Flight Demo app..."
+        java -jar /tmp/flight-demo-ui-1.0.jar
