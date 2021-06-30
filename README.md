@@ -53,3 +53,9 @@ EMIT CHANGES;`
 
 And set auto.offset.reset to earliest to get a count from the beginning.
 
+## Using test data instead of live data from OpenSky Network
+
+If you would like to use test data instead of live data (or if there is a problem with OpenSky), the following command will publish 500 flight updates every second for a total of 100,000 updates.
+
+`kafka-producer-perf-test --topic flights_raw --payload-file test_data/flights.out --num-records 100000 --throughput 100 --producer-props bootstrap.servers=localhost:9092`
+
