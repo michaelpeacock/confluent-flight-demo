@@ -1689,6 +1689,7 @@ var DrawHelper = (function() {
 
             var scene = drawHelper._scene;
 
+/*
             addIcon('marker', options.markerIcon, 'Click to start drawing a 2D marker', function() {
                 drawHelper.startDrawingMarker({
                     callback: function(position) {
@@ -1704,7 +1705,7 @@ var DrawHelper = (function() {
                     }
                 });
             })
-
+*/
             addIcon('polygon', options.polygonIcon, 'Click to start drawing a 2D polygon', function() {
                 drawHelper.startDrawingPolygon({
                     callback: function(positions) {
@@ -1712,7 +1713,7 @@ var DrawHelper = (function() {
                     }
                 });
             })
-
+/*
             addIcon('extent', options.extentIcon, 'Click to start drawing an Extent', function() {
                 drawHelper.startDrawingExtent({
                     callback: function(extent) {
@@ -1737,7 +1738,7 @@ var DrawHelper = (function() {
             addIcon('clear', options.clearIcon, 'Remove all primitives', function() {
                 scene.primitives.removeAll();
             });
-
+*/
             enhanceWithListeners(this);
 
         }

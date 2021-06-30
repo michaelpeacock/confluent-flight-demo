@@ -4,14 +4,21 @@ CREATE STREAM flights (
     `id` VARCHAR, 
     `callSign` VARCHAR, 
     `originCountry` VARCHAR,
-  	`updateTime` DOUBLE,
-  	`latitude` DOUBLE,
+  	`timePosition` DOUBLE,
+    `lastContact` DOUBLE,
+    `latitude` DOUBLE,
   	`longitude` DOUBLE,
-  	`altitude` DOUBLE,
-  	`speed` DOUBLE,
-  	`heading` DOUBLE
+  	`barometricAltitude` DOUBLE,
+    `onGround` BOOLEAN,
+    `velocity` DOUBLE,
+  	`heading` DOUBLE,
+    `verticalRate` DOUBLE,
+    `geometricAltitude` DOUBLE,
+    `squawk` VARCHAR,
+    `specialPurpose` BOOLEAN,
+    `positionSource` INTEGER
   ) WITH (
-    KAFKA_TOPIC='flights',
+    KAFKA_TOPIC='flights_raw',
     PARTITIONS=1,
     VALUE_FORMAT='JSON'
   );

@@ -17,11 +17,17 @@ function connect() {
             updateDashboard(JSON.parse(dashboard.body));            
         });
         stompClient.subscribe('/topic/flight-data', function (flight) {
+            console.log("receive flight data");
             handleFlightUpdate(JSON.parse(flight.body));
         });
         stompClient.subscribe('/topic/filtered-flight-data', function (flight) {
             handleFilteredFlightUpdate(JSON.parse(flight.body));
         });
+
+        //request the current data
+        stompClient.send("/app/getFlights", {}, JSON.stringify("all"));
+        stompClient.send("/app/getDashboardData", {}, JSON.stringify("all"));
+
     });
 }
 

@@ -11,7 +11,6 @@ public class FenceController {
 	@Autowired
 	private KafkaTemplate<String, String> kafkaTemplate;
 
-
 	@MessageMapping("/fence-data")
 	public void receiveFenceData(@Payload String fence) throws Exception {
 		System.out.println("fence data: " + fence);

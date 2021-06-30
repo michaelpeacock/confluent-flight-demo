@@ -1,18 +1,17 @@
 package io.confluent.flightdemo.streams;
 
 import io.confluent.flightdemo.models.DashboardModel;
+import io.confluent.flightdemo.models.FlightModel;
 import io.confluent.kafka.streams.serdes.avro.GenericAvroSerde;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
-import org.apache.kafka.streams.kstream.KStream;
-import org.apache.kafka.streams.kstream.KTable;
-import org.apache.kafka.streams.kstream.Produced;
-import org.apache.kafka.streams.kstream.ValueMapper;
+import org.apache.kafka.streams.kstream.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -29,21 +28,21 @@ public class FlightsInAir extends StreamsInterface {
     public Properties updateProperties() {
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "current-flights-in-air-counter-app");
-        props.put(StreamsConfig.DEFAULT_VALUE_SERDE_CLASS_CONFIG, GenericAvroSerde.class);
 
         return props;
     }
 
     @Override
     public Topology createTopology() {
+        final Serde<FlightModel> flightSerde = FlightModel.getJsonSerde();
         Set<String> uniqueFlightsList = new HashSet<String>();
         StreamsBuilder builder = new StreamsBuilder();
 
-        KStream<String, GenericRecord> flights = builder.stream("flights_raw");
+        KStream<String, FlightModel> flights = builder.stream("flights_raw", Consumed.with(Serdes.String(), flightSerde));
         KTable<String, String> uniquesFlightCountsByKey = flights
-                .filter((key, value) ->  {return value.get("onGround").toString().matches("false");})
+                .filter((key, value) ->  {return !value.getOnGround();})
                 .selectKey((key, value) -> {
-                    uniqueFlightsList.add(value.get("id").toString());
+                    uniqueFlightsList.add(value.getId());
                     return "flights-in-air-counts";
                 })
                 .groupByKey()

@@ -88,7 +88,7 @@
         var drawHelper = new DrawHelper(viewer);
  
         var toolbar = drawHelper.addToolbar(document.getElementById("toolbar"), {
-            buttons: ['marker', 'polyline', 'polygon', 'circle', 'extent']
+            buttons: ['marker', 'polyline', 'polygon']
         });
         toolbar.addListener('markerCreated', function(event) {
             loggingMessage('Marker created at ' + event.position.toString());

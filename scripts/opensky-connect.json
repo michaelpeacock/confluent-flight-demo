@@ -6,8 +6,15 @@
 		"tasks.max": "1",
 		"topic": "flights_raw",
 		"key.converter": "org.apache.kafka.connect.storage.StringConverter",
-		"value.converter": "io.confluent.connect.avro.AvroConverter",
-		"value.converter.schema.registry.url": "http://schema-registry:8081",
-		"interval": "12"
+		"value.converter": "org.apache.kafka.connect.json.JsonConverter",
+		"value.converter.schemas.enable": false,
+		"interval": "60",
+		"opensky.timeout.connect": "45s",
+		"opensky.timeout.read": "45s",
+		"transforms": "flatten,rename",
+		"transforms.flatten.type": "org.apache.kafka.connect.transforms.Flatten$Value",
+		"transforms.flatten.delimiter": "_",
+		"transforms.rename.type": "org.apache.kafka.connect.transforms.ReplaceField$Value",
+		"transforms.rename.renames": "location_lat:latitude,location_lon:longitude"
 	}
 }
