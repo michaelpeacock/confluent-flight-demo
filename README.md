@@ -59,3 +59,13 @@ If you would like to use test data instead of live data (or if there is a proble
 
 `kafka-producer-perf-test --topic flights_raw --payload-file test_data/flights.out --num-records 100000 --throughput 100 --producer-props bootstrap.servers=localhost:9092`
 
+## Problems Running
+
+If you only see a blue globe with no land, then you may need to update the Cesium version. You will need to update the references in the index.html file. For example, change the two lines in the head section: 
+
+```
+<script src="https://cesium.com/downloads/cesiumjs/releases/<latest>/Build/Cesium/Cesium.js"></script>
+<link href="https://cesium.com/downloads/cesiumjs/releases/<latest>/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+```
+
+You can find the latest version at https://cesium.com/downloads/
