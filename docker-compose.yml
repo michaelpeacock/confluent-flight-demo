@@ -187,13 +187,14 @@ services:
       - |
         echo "Creating streams via ksqlDB..."
         cub ksql-server-ready ksqldb-server 8088 20
+        sleep 20
         ksql http://ksqldb-server:8088 < /tmp/scripts/ksql/createFlightsStream.sql
         ksql http://ksqldb-server:8088 < /tmp/scripts/ksql/createGeoFenceStream.sql
         ksql http://ksqldb-server:8088 < /tmp/scripts/ksql/createFilteredFlightsStream.sql
         sleep infinity
 
   flight-demo:
-    image: michaelpeacock/confluent-flight-demo:latest
+    image: michaelpeacock/confluent-flight-demo:05132022
     container_name: flight-demo
     depends_on:
       - broker
